@@ -23,6 +23,7 @@ const CONFIG = {
   DB_FILE: process.env.DB_FILE || path.join(__dirname, 'db.json'),
   SESSION_TTL: 7 * 24 * 60 * 60 * 1000,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin123',
+  MAX_HISTORY: 50,
 };
 
 // ─── DATABASE ─────────────────────────────────────────────────────────────────
@@ -61,6 +62,14 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ─── HELPER: thêm lịch sử và giới hạn 50 bản ghi ────────────────────────────
+function addHistory(user, entry) {
+  user.history.unshift(entry);
+  if (user.history.length > CONFIG.MAX_HISTORY) {
+    user.history = user.history.slice(0, CONFIG.MAX_HISTORY);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -88,7 +97,6 @@ app.post('/api/auth/register', (req, res) => {
   const token = generateToken();
   db.sessions[token] = { uid, username: uname, expiry: Date.now() + CONFIG.SESSION_TTL };
   saveDB(db);
-  console.log(`[REGISTER] ${uname}`);
   res.json({ success: true, token, displayName: username.trim(), balance: 0 });
 });
 
@@ -106,7 +114,6 @@ app.post('/api/auth/login', (req, res) => {
   const token = generateToken();
   db.sessions[token] = { uid: user.uid, username: uname, expiry: Date.now() + CONFIG.SESSION_TTL };
   saveDB(db);
-  console.log(`[LOGIN] ${uname}`);
   res.json({ success: true, token, displayName: user.displayName, balance: user.balance });
 });
 
@@ -125,7 +132,7 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 app.get('/api/wallet', requireAuth, (req, res) => {
   const db = loadDB();
   const user = db.users[req.uid];
-  res.json({ success: true, balance: user.balance, history: user.history.slice(0, 30), displayName: user.displayName });
+  res.json({ success: true, balance: user.balance, history: user.history, displayName: user.displayName });
 });
 
 app.post('/api/deposit/qr', requireAuth, (req, res) => {
@@ -143,12 +150,74 @@ app.get('/api/deposit/check', requireAuth, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SEPAY WEBHOOK — tự động xác nhận nạp tiền
+// EXPORT LỊCH SỬ — tải về file .txt hoặc .csv
+// ═══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/history/export', requireAuth, (req, res) => {
+  const { format = 'txt' } = req.query;
+  const db = loadDB();
+  const user = db.users[req.uid];
+  const history = user.history;
+
+  if (!history || history.length === 0) {
+    return res.status(404).json({ success: false, error: 'Chưa có lịch sử giao dịch' });
+  }
+
+  const now = new Date().toLocaleString('vi-VN');
+  const filename = `lichsu_${user.username}_${Date.now()}`;
+
+  if (format === 'csv') {
+    let csv = '\uFEFF'; // BOM để Excel hiển thị đúng tiếng Việt
+    csv += 'STT,Loại,Mô tả,Số tiền (₫),Thời gian\n';
+    history.forEach((h, i) => {
+      const type = h.type === 'deposit' ? 'Nạp tiền' :
+                   h.type === 'lookup' ? 'Tra cứu' :
+                   h.type === 'admin_add' ? 'Admin cộng' : 'Admin trừ';
+      const amt = h.amount > 0 ? `+${h.amount}` : `${h.amount}`;
+      const time = new Date(h.time).toLocaleString('vi-VN');
+      const note = (h.note || '').replace(/,/g, ';');
+      csv += `${i + 1},"${type}","${note}","${amt}","${time}"\n`;
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
+    return res.send(csv);
+  }
+
+  // Xuất TXT
+  let txt = `═══════════════════════════════════════\n`;
+  txt += `  LỊCH SỬ GIAO DỊCH — ${user.displayName.toUpperCase()}\n`;
+  txt += `═══════════════════════════════════════\n`;
+  txt += `Xuất lúc : ${now}\n`;
+  txt += `Số dư    : ${user.balance.toLocaleString('vi')} ₫\n`;
+  txt += `Tổng GD  : ${history.length} giao dịch (50 gần nhất)\n`;
+  txt += `───────────────────────────────────────\n\n`;
+  history.forEach((h, i) => {
+    const type = h.type === 'deposit' ? '💰 NẠP TIỀN' :
+                 h.type === 'lookup' ? '🔍 TRA CỨU' :
+                 h.type === 'admin_add' ? '➕ ADMIN CỘNG' : '➖ ADMIN TRỪ';
+    const amt = h.amount > 0 ? `+${h.amount.toLocaleString('vi')} ₫` : `${h.amount.toLocaleString('vi')} ₫`;
+    const time = new Date(h.time).toLocaleString('vi-VN');
+    txt += `[${String(i + 1).padStart(2, '0')}] ${type}\n`;
+    txt += `     Mô tả    : ${h.note || '—'}\n`;
+    txt += `     Số tiền  : ${amt}\n`;
+    txt += `     Thời gian: ${time}\n`;
+    txt += `     ─────────────────────────────\n`;
+  });
+  txt += `\n═══════════════════════════════════════\n`;
+  txt += `  trumsope.pro — Shopee Lookup\n`;
+  txt += `═══════════════════════════════════════\n`;
+
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}.txt"`);
+  return res.send(txt);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEPAY WEBHOOK
 // ═══════════════════════════════════════════════════════════════════════════════
 
 app.post('/webhook/sepay', (req, res) => {
   const { transferAmount, description, transferType } = req.body;
-  console.log('[WEBHOOK]', req.body);
   if (transferType !== 'in') return res.json({ success: false });
   const match = description?.match(/NAP\s+(uid_[a-f0-9]+)/i);
   if (!match) return res.json({ success: false });
@@ -158,9 +227,8 @@ app.post('/webhook/sepay', (req, res) => {
   const db = loadDB();
   if (!db.users[uid]) return res.json({ success: false });
   db.users[uid].balance += amount;
-  db.users[uid].history.unshift({ type: 'deposit', amount, note: 'Nạp tiền qua chuyển khoản', time: new Date().toISOString() });
+  addHistory(db.users[uid], { type: 'deposit', amount, note: 'Nạp tiền qua chuyển khoản', time: new Date().toISOString() });
   saveDB(db);
-  console.log(`✅ +${amount}đ → ${uid}`);
   res.json({ success: true });
 });
 
@@ -201,7 +269,7 @@ app.post('/api/check', requireAuth, async (req, res) => {
       return res.json({ success: false, error: 'Không tìm thấy thông tin. Tiền không bị trừ.' });
     }
     user.balance -= CONFIG.LOOKUP_PRICE;
-    user.history.unshift({ type: 'lookup', amount: -CONFIG.LOOKUP_PRICE, note: `Tra cứu: ${shopeeUsername.trim()}`, time: new Date().toISOString() });
+    addHistory(user, { type: 'lookup', amount: -CONFIG.LOOKUP_PRICE, note: `Tra cứu: ${shopeeUsername.trim()} → ${phone}`, time: new Date().toISOString() });
     saveDB(db);
     res.json({ success: true, phone, shopeeUsername: shopeeUsername.trim(), balance: user.balance });
   } catch (err) {
@@ -266,9 +334,8 @@ app.post('/api/admin/balance', requireAdmin, (req, res) => {
   if (!user) return res.status(404).json({ success: false, error: 'Không tìm thấy user' });
   const prev = user.balance;
   user.balance = Math.max(0, user.balance + amount);
-  user.history.unshift({ type: amount > 0 ? 'admin_add' : 'admin_deduct', amount, note: note || (amount > 0 ? 'Admin cộng tiền' : 'Admin trừ tiền'), time: new Date().toISOString() });
+  addHistory(user, { type: amount > 0 ? 'admin_add' : 'admin_deduct', amount, note: note || (amount > 0 ? 'Admin cộng tiền' : 'Admin trừ tiền'), time: new Date().toISOString() });
   saveDB(db);
-  console.log(`[ADMIN] ${amount > 0 ? '+' : ''}${amount}đ → ${user.username}`);
   res.json({ success: true, prevBalance: prev, newBalance: user.balance, username: user.username });
 });
 
@@ -282,7 +349,7 @@ app.post('/api/admin/balance/set', requireAdmin, (req, res) => {
   const prev = user.balance;
   const diff = balance - prev;
   user.balance = balance;
-  user.history.unshift({ type: diff >= 0 ? 'admin_add' : 'admin_deduct', amount: diff, note: note || `Admin đặt số dư: ${balance.toLocaleString('vi')}đ`, time: new Date().toISOString() });
+  addHistory(user, { type: diff >= 0 ? 'admin_add' : 'admin_deduct', amount: diff, note: note || `Admin đặt số dư: ${balance.toLocaleString('vi')}đ`, time: new Date().toISOString() });
   saveDB(db);
   res.json({ success: true, prevBalance: prev, newBalance: balance, username: user.username });
 });
@@ -294,7 +361,6 @@ app.delete('/api/admin/users/:uid', requireAdmin, (req, res) => {
   const username = user.username;
   delete db.users[req.params.uid];
   saveDB(db);
-  console.log(`[ADMIN] Xóa tài khoản ${username}`);
   res.json({ success: true, username });
 });
 
@@ -303,7 +369,5 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 app.listen(CONFIG.PORT, () => {
   console.log(`🚀 Server: http://localhost:${CONFIG.PORT}`);
-  console.log(`🔑 HAWK_TOKEN: ${CONFIG.HAWK_TOKEN.substring(0, 8)}...`);
-  console.log(`🔐 ADMIN_PASSWORD: ${CONFIG.ADMIN_PASSWORD}`);
-  console.log(`💾 DB_FILE: ${CONFIG.DB_FILE}`);
+  console.log(`📋 MAX_HISTORY: ${CONFIG.MAX_HISTORY} bản ghi/user`);
 });

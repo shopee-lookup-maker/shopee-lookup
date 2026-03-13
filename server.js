@@ -399,6 +399,58 @@ app.post('/api/admin/price', requireAdmin, (req, res) => {
   res.json({ success: true, username: user.username, customPrice: user.customPrice || null });
 });
 
+
+// ─── ADMIN: ĐỔI MẬT KHẨU USER ───────────────────────────────────────────────
+app.post('/api/admin/reset-password', requireAdmin, (req, res) => {
+  const uid = req.body.uid;
+  const newPassword = req.body.newPassword;
+  if (!uid || !newPassword || newPassword.length < 6)
+    return res.status(400).json({ success: false, error: 'Mật khẩu tối thiểu 6 ký tự' });
+  const db = loadDB();
+  const user = db.users[uid];
+  if (!user) return res.status(404).json({ success: false, error: 'Không tìm thấy user' });
+  user.password = hashPassword(newPassword);
+  saveDB(db);
+  res.json({ success: true, username: user.username });
+});
+
+// ─── ADMIN: THÔNG BÁO ĐỘNG ───────────────────────────────────────────────────
+app.get('/api/announcement', (req, res) => {
+  const db = loadDB();
+  res.json({ success: true, announcement: db.announcement || null });
+});
+
+app.post('/api/admin/announcement', requireAdmin, (req, res) => {
+  const text = req.body.text || '';
+  const type = req.body.type || 'info'; // info, warning, success
+  const db = loadDB();
+  if (!text.trim()) {
+    db.announcement = null;
+  } else {
+    db.announcement = { text: text.trim(), type, updatedAt: new Date().toISOString() };
+  }
+  saveDB(db);
+  res.json({ success: true, announcement: db.announcement });
+});
+
+// ─── ADMIN: GIẢM GIÁ HÀNG LOẠT ──────────────────────────────────────────────
+app.post('/api/admin/price/bulk', requireAdmin, (req, res) => {
+  const price = req.body.price;
+  const reset = req.body.reset;
+  const db = loadDB();
+  let count = 0;
+  Object.values(db.users).forEach(function(user) {
+    if (reset) {
+      delete user.customPrice;
+    } else {
+      user.customPrice = price;
+    }
+    count++;
+  });
+  saveDB(db);
+  res.json({ success: true, count, price: reset ? null : price });
+});
+
 app.delete('/api/admin/users/:uid', requireAdmin, (req, res) => {
   const db = loadDB();
   const user = db.users[req.params.uid];

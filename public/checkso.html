@@ -223,10 +223,10 @@
 <div class="overlay" id="historyModal">
   <div class="modal">
     <div class="modal-top">
-      <div><h3>📋 Lịch sử giao dịch</h3><p>Tất cả nạp tiền và tra cứu</p></div>
+      <div><h3>📋 Lịch sử giao dịch</h3><p>50 giao dịch gần nhất</p></div>
       <button class="close-x" onclick="closeHistory()">×</button>
     </div>
-    <div class="modal-body" id="histModalBody"><div class="empty">Đang tải...</div></div>
+    <div style="padding:12px 22px 0;display:flex;gap:8px"><button onclick="exportHistory('txt')" style="flex:1;padding:9px;background:var(--s3);border:1px solid var(--bdr2);border-radius:9px;color:var(--muted2);font-family:Be Vietnam Pro,sans-serif;font-size:12px;font-weight:600;cursor:pointer">⬇️ Tải về TXT</button><button onclick="exportHistory('csv')" style="flex:1;padding:9px;background:var(--s3);border:1px solid var(--bdr2);border-radius:9px;color:var(--muted2);font-family:Be Vietnam Pro,sans-serif;font-size:12px;font-weight:600;cursor:pointer">📊 Tải về CSV</button></div><div class="modal-body" id="histModalBody"><div class="empty">Đang tải...</div></div>
   </div>
 </div>
 
@@ -344,6 +344,16 @@
     }, 4000);
   }
   function stopPoll() { if (pollInt) { clearInterval(pollInt); pollInt = null; } }
+  function exportHistory(format) {
+    const a = document.createElement('a');
+    a.href = '/api/history/export?format=' + format;
+    a.setAttribute('download', '');
+    const headers = new Headers({ 'Authorization': 'Bearer ' + token });
+    fetch(a.href, { headers })
+      .then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error); }); return r.blob(); })
+      .then(blob => { const url = URL.createObjectURL(blob); a.href = url; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); })
+      .catch(e => alert('Lỗi: ' + e.message));
+  }
 </script>
 </body>
 </html>

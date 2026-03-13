@@ -141,6 +141,7 @@
     <button class="logout-btn" onclick="logout()">Đăng xuất</button>
   </div>
 </nav>
+<div id="announcementBar" style="display:none;padding:10px 20px;text-align:center;font-size:13px;font-weight:600;position:sticky;top:60px;z-index:99"></div>
 <div class="main">
   <div class="bal-strip">
     <div class="bal-left">
@@ -204,7 +205,7 @@
           <div class="qr-img-box"><img id="qrImg" src="" alt="QR"/></div>
           <div class="bank-rows">
             <div class="brow"><span class="bl">Ngân hàng</span><span class="bv">MSB</span></div>
-            <div class="brow"><span class="bl">Số tài khoản</span><span class="bv">96886693006960</span></div>
+            <div class="brow"><span class="bl">Số tài khoản</span><span class="bv">6817072002</span></div>
             <div class="brow"><span class="bl">Chủ TK</span><span class="bv">NGUYEN DANG HAI</span></div>
             <div class="brow"><span class="bl">Số tiền</span><span class="bv" id="qrAmt">—</span></div>
           </div>
@@ -242,6 +243,30 @@
     localStorage.removeItem('sl_token'); localStorage.removeItem('sl_name');
     window.location.href = '/';
   }
+
+  async function loadAnnouncement() {
+    try {
+      const r = await fetch('/api/announcement');
+      const d = await r.json();
+      const bar = document.getElementById('announcementBar');
+      if (d.success && d.announcement) {
+        const colors = {
+          info: { bg: 'rgba(33,150,243,0.15)', border: 'rgba(33,150,243,0.4)', color: '#64B5F6' },
+          warning: { bg: 'rgba(255,152,0,0.15)', border: 'rgba(255,152,0,0.4)', color: '#FFB74D' },
+          success: { bg: 'rgba(76,175,80,0.15)', border: 'rgba(76,175,80,0.4)', color: '#81C784' },
+        };
+        const c = colors[d.announcement.type] || colors.info;
+        bar.style.display = 'block';
+        bar.style.background = c.bg;
+        bar.style.borderBottom = '1px solid ' + c.border;
+        bar.style.color = c.color;
+        bar.textContent = '📢 ' + d.announcement.text;
+      } else {
+        bar.style.display = 'none';
+      }
+    } catch {}
+  }
+
   let balance = 0;
   async function loadWallet() {
     try {
@@ -267,6 +292,7 @@
     document.getElementById('histModalBody').innerHTML = history?.length ? history.map(histRow).join('') : '<div class="empty">Chưa có giao dịch</div>';
   }
   loadWallet();
+  loadAnnouncement();
   document.getElementById('shopeeUser').addEventListener('keydown', e => { if (e.key==='Enter') doCheck(); });
   async function doCheck() {
     const shopeeUsername = document.getElementById('shopeeUser').value.trim();

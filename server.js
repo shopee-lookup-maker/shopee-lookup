@@ -17,7 +17,7 @@ const CONFIG = {
   USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
   PORT: process.env.PORT || 3000,
   BANK_ID: 'MSB',
-  ACCOUNT_NO: '96886693006960',
+  ACCOUNT_NO: '80001375838',
   ACCOUNT_NAME: 'Nguyen Dang Hai',
   LOOKUP_PRICE: 20000,
   DB_FILE: process.env.DB_FILE || path.join(__dirname, 'db.json'),
@@ -225,9 +225,11 @@ app.post('/webhook/sepay', (req, res) => {
   if (transferType !== 'in') return res.json({ success: false });
   // Tìm uid trong cả description lẫn content (SePay có thể gửi ở 1 trong 2)
   const searchText = (description || '') + ' ' + (content || '');
-  const match = searchText.match(/NAP\s+(uid_[a-f0-9]+)/i);
+  const match = searchText.match(/NAP\s+(uid_?[a-f0-9]+)/i);
   if (!match) return res.json({ success: false });
-  const uid = match[1];
+  // Chuẩn hóa uid: đảm bảo có dạng uid_xxxxxx
+  const rawUid = match[1];
+  const uid = rawUid.startsWith('uid_') ? rawUid : 'uid_' + rawUid.slice(3);
   const amount = parseInt(transferAmount) || 0;
   if (amount <= 0) return res.json({ success: false });
   const db = loadDB();

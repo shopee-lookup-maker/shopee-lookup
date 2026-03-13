@@ -189,6 +189,34 @@
     <div class="stat s-green"><div class="stat-label">Tổng đã nạp</div><div class="stat-val" id="st-deposited">—</div><div class="stat-sub">từ khách hàng</div></div>
     <div class="stat s-purple"><div class="stat-label">Doanh thu</div><div class="stat-val" id="st-revenue">—</div><div class="stat-sub" id="st-lookups">0 lần tra cứu</div></div>
   </div>
+  <!-- PANEL CÔNG CỤ -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px">
+    <!-- Thông báo động -->
+    <div style="background:var(--s1);border:1px solid var(--bdr);border-radius:14px;padding:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:14px">📢 Thông báo trên trang khách</div>
+      <textarea id="annText" placeholder="Nhập nội dung thông báo... (để trống = tắt thông báo)" style="width:100%;height:70px;background:var(--s2);border:1.5px solid var(--bdr);border-radius:9px;padding:10px;color:var(--txt);font-family:Be Vietnam Pro,sans-serif;font-size:13px;resize:none;outline:none;margin-bottom:10px"></textarea>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button onclick="setAnnType('info')" id="ann-info" style="flex:1;padding:7px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;background:var(--blue-bg);border:1px solid var(--blue-bdr);color:#64B5F6">ℹ️ Thông tin</button>
+        <button onclick="setAnnType('warning')" id="ann-warning" style="flex:1;padding:7px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;background:var(--s3);border:1px solid var(--bdr);color:var(--muted2)">⚠️ Cảnh báo</button>
+        <button onclick="setAnnType('success')" id="ann-success" style="flex:1;padding:7px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;background:var(--s3);border:1px solid var(--bdr);color:var(--muted2)">✅ Thành công</button>
+      </div>
+      <button onclick="saveAnnouncement()" style="width:100%;padding:9px;background:var(--org);color:#fff;border:none;border-radius:9px;font-family:Be Vietnam Pro,sans-serif;font-size:13px;font-weight:700;cursor:pointer">Lưu thông báo</button>
+    </div>
+    <!-- Giảm giá hàng loạt -->
+    <div style="background:var(--s1);border:1px solid var(--bdr);border-radius:14px;padding:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:14px">🎉 Điều chỉnh giá hàng loạt</div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:10px">Áp dụng cho toàn bộ thành viên cùng lúc</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div onclick="setBulkPrice(18000)" style="padding:10px;background:var(--s3);border:1px solid var(--bdr2);border-radius:9px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:#FFD54F">18.000đ</div>
+        <div onclick="setBulkPrice(16000)" style="padding:10px;background:var(--s3);border:1px solid var(--bdr2);border-radius:9px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:#FFD54F">16.000đ</div>
+        <div onclick="setBulkPrice(14000)" style="padding:10px;background:var(--s3);border:1px solid var(--bdr2);border-radius:9px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:#FFD54F">14.000đ</div>
+        <div onclick="setBulkPrice(0)" style="padding:10px;background:var(--s3);border:1px solid var(--bdr2);border-radius:9px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:var(--muted2)">↩️ Reset 20.000đ</div>
+      </div>
+      <input type="number" id="bulkPriceInp" placeholder="Hoặc nhập giá tùy chỉnh..." min="1000" step="1000" style="width:100%;background:var(--s2);border:1.5px solid var(--bdr);border-radius:9px;padding:9px 12px;color:var(--txt);font-family:Be Vietnam Pro,sans-serif;font-size:13px;outline:none;margin-bottom:10px"/>
+      <button onclick="applyBulkPrice()" style="width:100%;padding:9px;background:rgba(255,193,7,.15);border:1px solid rgba(255,193,7,.3);color:#FFD54F;border-radius:9px;font-family:Be Vietnam Pro,sans-serif;font-size:13px;font-weight:700;cursor:pointer">Áp dụng cho tất cả</button>
+    </div>
+  </div>
+
   <div class="sec-head">
     <div class="sec-title">👥 Danh sách thành viên <span class="sec-count" id="userCount">0</span></div>
     <button class="refresh-btn" onclick="loadAll()">🔄 Làm mới</button>
@@ -360,7 +388,7 @@
           <div class="actions">
             <button class="act-btn add" onclick="openBalModal('${u.uid}','add')">➕ Cộng</button>
             <button class="act-btn deduct" onclick="openBalModal('${u.uid}','deduct')">➖ Trừ</button>
-            <button class="act-btn detail" onclick="openDetail('${u.uid}')">📋</button><button class="act-btn" style="background:rgba(255,193,7,.1);border-color:rgba(255,193,7,.25);color:#FFD54F" onclick="openPriceModal('${u.uid}','${u.displayName}',${u.customPrice||0})">💰 Giá</button>
+            <button class="act-btn detail" onclick="openDetail('${u.uid}')">📋</button><button class="act-btn" style="background:rgba(156,39,176,.1);border-color:rgba(156,39,176,.25);color:#CE93D8" onclick="openResetPw('${u.uid}','${u.displayName}')">🔑</button><button class="act-btn" style="background:rgba(255,193,7,.1);border-color:rgba(255,193,7,.25);color:#FFD54F" onclick="openPriceModal('${u.uid}','${u.displayName}',${u.customPrice||0})">💰 Giá</button>
             <button class="act-btn del" onclick="confirmDelete('${u.uid}')">🗑</button>
           </div>
         </td>
@@ -497,7 +525,71 @@
     } catch { document.getElementById('priceAlert').innerHTML = '<div class="alert-box err">⚠️ Lỗi kết nối</div>'; }
   }
 
+
+  // ── THÔNG BÁO ──
+  let annType = 'info';
+  function setAnnType(type) {
+    annType = type;
+    ['info','warning','success'].forEach(t => {
+      const btn = document.getElementById('ann-' + t);
+      if (t === type) {
+        btn.style.background = t === 'info' ? 'var(--blue-bg)' : t === 'warning' ? 'rgba(255,152,0,.15)' : 'var(--green-bg)';
+        btn.style.borderColor = t === 'info' ? 'var(--blue-bdr)' : t === 'warning' ? 'rgba(255,152,0,.3)' : 'var(--green-bdr)';
+        btn.style.color = t === 'info' ? '#64B5F6' : t === 'warning' ? '#FFB74D' : '#81C784';
+      } else {
+        btn.style.background = 'var(--s3)'; btn.style.borderColor = 'var(--bdr)'; btn.style.color = 'var(--muted2)';
+      }
+    });
+  }
+  async function saveAnnouncement() {
+    const text = document.getElementById('annText').value;
+    try {
+      const r = await fetch('/api/admin/announcement', { method:'POST', headers:aH(), body:JSON.stringify({ text, type: annType }) });
+      const d = await r.json();
+      if (d.success) toast(text.trim() ? '📢 Đã lưu thông báo!' : '🔕 Đã tắt thông báo', 'ok');
+    } catch { toast('❌ Lỗi kết nối', 'err'); }
+  }
+  async function loadCurrentAnnouncement() {
+    try {
+      const r = await fetch('/api/announcement');
+      const d = await r.json();
+      if (d.success && d.announcement) {
+        document.getElementById('annText').value = d.announcement.text;
+        setAnnType(d.announcement.type);
+      }
+    } catch {}
+  }
+
+  // ── GIẢM GIÁ HÀNG LOẠT ──
+  function setBulkPrice(price) {
+    document.getElementById('bulkPriceInp').value = price || '';
+  }
+  async function applyBulkPrice() {
+    const inp = document.getElementById('bulkPriceInp').value;
+    const price = parseInt(inp) || 0;
+    const reset = price === 0 || price === 20000;
+    const label = reset ? '20.000đ (mặc định)' : price.toLocaleString('vi') + 'đ';
+    if (!confirm('Áp dụng giá ' + label + ' cho toàn bộ thành viên?')) return;
+    try {
+      const r = await fetch('/api/admin/price/bulk', { method:'POST', headers:aH(), body:JSON.stringify({ price, reset }) });
+      const d = await r.json();
+      if (d.success) { toast('🎉 Đã cập nhật giá ' + label + ' cho ' + d.count + ' thành viên', 'ok'); loadAll(); }
+    } catch { toast('❌ Lỗi kết nối', 'err'); }
+  }
+
+  // ── ĐỔI MẬT KHẨU ──
+  function openResetPw(uid, name) {
+    const pw = prompt('Nhập mật khẩu mới cho ' + name + ' (tối thiểu 6 ký tự):');
+    if (!pw) return;
+    if (pw.length < 6) { alert('Mật khẩu tối thiểu 6 ký tự!'); return; }
+    fetch('/api/admin/reset-password', { method:'POST', headers:aH(), body:JSON.stringify({ uid, newPassword: pw }) })
+      .then(r => r.json())
+      .then(d => { if (d.success) toast('🔑 Đã đổi mật khẩu cho ' + d.username, 'ok'); else toast('❌ ' + d.error, 'err'); })
+      .catch(() => toast('❌ Lỗi kết nối', 'err'));
+  }
+
   setInterval(loadAll, 30000);
+  loadCurrentAnnouncement();
 </script>
 
 <!-- MODAL: GIÁ RIÊNG -->

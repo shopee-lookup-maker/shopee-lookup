@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Shopee Lookup — Đăng nhập</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --org:#FF5722;--org2:#FF8A65;--org-dim:rgba(255,87,34,.15);--org-glow:rgba(255,87,34,.2);
+      --bg:#09090B;--s1:#111113;--s2:#18181C;--s3:#222228;
+      --bdr:rgba(255,255,255,.06);--bdr2:rgba(255,255,255,.11);
+      --txt:#F0ECE6;--muted:#64605A;--muted2:#9E9A93;
+      --green:#4CAF50;--red:#F44336;
+    }
+    html,body{height:100%;font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--txt)}
+    .bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,87,34,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,87,34,.02) 1px,transparent 1px);background-size:44px 44px;z-index:0}
+    .bg-glow{position:fixed;bottom:-20%;left:50%;transform:translateX(-50%);width:900px;height:500px;background:radial-gradient(ellipse,rgba(255,87,34,.09) 0%,transparent 65%);z-index:0;pointer-events:none}
+    .page{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;position:relative;z-index:1}
+    .left{display:flex;flex-direction:column;justify-content:space-between;padding:48px;background:linear-gradient(145deg,#0E0E11 0%,#141418 100%);border-right:1px solid var(--bdr);position:relative;overflow:hidden}
+    .left-glow{position:absolute;top:-10%;right:-20%;width:500px;height:500px;background:radial-gradient(circle,rgba(255,87,34,.12) 0%,transparent 60%);pointer-events:none}
+    .left-glow2{position:absolute;bottom:-10%;left:-10%;width:350px;height:350px;background:radial-gradient(circle,rgba(255,87,34,.06) 0%,transparent 60%);pointer-events:none}
+    .logo{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;letter-spacing:-.02em}
+    .logo-mark{width:36px;height:36px;background:var(--org);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .hero{margin:auto 0}
+    .hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--org-dim);border:1px solid rgba(255,87,34,.2);color:var(--org2);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:22px}
+    .hero-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--org);animation:blink 2s ease infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .hero h2{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1.1;margin-bottom:18px}
+    .hero h2 em{font-style:normal;color:var(--org)}
+    .hero p{font-size:15px;color:var(--muted2);line-height:1.75;max-width:360px}
+    .features{display:flex;flex-direction:column;gap:12px;margin-top:36px}
+    .feat{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted2)}
+    .feat-icon{width:32px;height:32px;border-radius:9px;background:var(--s3);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .left-foot{font-size:12px;color:var(--muted);line-height:1.6}
+    .right{display:flex;align-items:center;justify-content:center;padding:48px 40px;background:var(--bg)}
+    .auth-box{width:100%;max-width:400px}
+    .auth-title{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:6px}
+    .auth-sub{font-size:14px;color:var(--muted2);margin-bottom:32px}
+    .auth-sub a{color:var(--org2);text-decoration:none;font-weight:600}
+    .auth-sub a:hover{text-decoration:underline}
+    .auth-tabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--bdr);border-radius:12px;padding:4px;margin-bottom:28px}
+    .auth-tab{flex:1;padding:9px;border:none;background:none;color:var(--muted);font-family:'Be Vietnam Pro',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border-radius:9px;transition:all .2s}
+    .auth-tab.active{background:var(--s1);color:var(--txt);box-shadow:0 1px 6px rgba(0,0,0,.5)}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+    .inp-wrap{position:relative}
+    .inp-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+    .inp-toggle{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px}
+    .inp-toggle:hover{color:var(--txt)}
+    input{width:100%;background:var(--s2);border:1.5px solid var(--bdr);border-radius:11px;padding:13px 13px 13px 40px;color:var(--txt);font-family:'Be Vietnam Pro',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+    input::placeholder{color:var(--muted)}
+    input:focus{border-color:rgba(255,87,34,.5);box-shadow:0 0 0 3px var(--org-glow)}
+    .alert{display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;animation:fadeIn .25s ease}
+    .alert.err{background:rgba(244,67,54,.08);border:1px solid rgba(244,67,54,.2);color:#EF9A9A}
+    .alert.ok{background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.2);color:#A5D6A7}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+    .btn{width:100%;padding:14px;background:var(--org);color:#fff;border:none;border-radius:11px;font-family:'Be Vietnam Pro',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(255,87,34,.28);letter-spacing:-.01em;margin-top:6px}
+    .btn:hover:not(:disabled){background:var(--org2);box-shadow:0 6px 26px rgba(255,87,34,.42);transform:translateY(-1px)}
+    .btn:active:not(:disabled){transform:scale(.98)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .spinner{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:768px){.page{grid-template-columns:1fr}.left{display:none}.right{padding:32px 20px}}
+  </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="page">
+  <div class="left">
+    <div class="left-glow"></div>
+    <div class="left-glow2"></div>
+    <div class="logo"><div class="logo-mark">🛍</div>Shopee Lookup</div>
+    <div class="hero">
+      <div class="hero-tag">Dịch vụ tra cứu</div>
+      <h2>Tìm <em>số điện thoại</em><br>từ username<br>Shopee</h2>
+      <p>Nạp tiền vào ví, tra cứu không giới hạn. Kết quả chính xác, phản hồi ngay lập tức.</p>
+      <div class="features">
+        <div class="feat"><div class="feat-icon">⚡</div>Kết quả trong vài giây</div>
+        <div class="feat"><div class="feat-icon">💳</div>Nạp tiền qua QR VietQR / MSB</div>
+        <div class="feat"><div class="feat-icon">🔒</div>Tài khoản cá nhân, số dư riêng</div>
+        <div class="feat"><div class="feat-icon">📋</div>Lịch sử giao dịch đầy đủ</div>
+      </div>
+    </div>
+    <div class="left-foot">Phí tra cứu: <strong style="color:var(--org2);font-family:'JetBrains Mono',monospace">20.000 ₫</strong> / lần</div>
+  </div>
+  <div class="right">
+    <div class="auth-box">
+      <div class="auth-title" id="authTitle">Đăng nhập</div>
+      <div class="auth-sub" id="authSub">Chưa có tài khoản? <a href="#" onclick="setTab('register')">Đăng ký ngay</a></div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="setTab('login')">Đăng nhập</button>
+        <button class="auth-tab" id="tabRegister" onclick="setTab('register')">Đăng ký</button>
+      </div>
+      <div id="alertBox"></div>
+      <div class="form-group">
+        <label>Tên đăng nhập</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">👤</span>
+          <input type="text" id="inpUser" placeholder="Nhập tên đăng nhập..." autocomplete="username" spellcheck="false"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">🔑</span>
+          <input type="password" id="inpPass" placeholder="Nhập mật khẩu..." autocomplete="current-password"/>
+          <button class="inp-toggle" onclick="togglePass()">👁</button>
+        </div>
+      </div>
+      <div class="form-group" id="confirmGroup" style="display:none">
+        <label>Xác nhận mật khẩu</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">🔑</span>
+          <input type="password" id="inpConfirm" placeholder="Nhập lại mật khẩu..."/>
+        </div>
+      </div>
+      <button class="btn" id="submitBtn" onclick="handleSubmit()">
+        <span id="btnText">Đăng nhập</span>
+      </button>
+    </div>
+  </div>
+</div>
+<script>
+  if (localStorage.getItem('sl_token')) window.location.href = '/checkso.html';
+  let mode = 'login';
+  function setTab(m) {
+    mode = m;
+    const isL = m === 'login';
+    document.getElementById('tabLogin').className = 'auth-tab' + (isL ? ' active' : '');
+    document.getElementById('tabRegister').className = 'auth-tab' + (!isL ? ' active' : '');
+    document.getElementById('authTitle').textContent = isL ? 'Đăng nhập' : 'Tạo tài khoản';
+    document.getElementById('authSub').innerHTML = isL
+      ? 'Chưa có tài khoản? <a href="#" onclick="setTab(\'register\')">Đăng ký ngay</a>'
+      : 'Đã có tài khoản? <a href="#" onclick="setTab(\'login\')">Đăng nhập</a>';
+    document.getElementById('btnText').textContent = isL ? 'Đăng nhập' : 'Tạo tài khoản';
+    document.getElementById('confirmGroup').style.display = isL ? 'none' : 'block';
+    document.getElementById('alertBox').innerHTML = '';
+    document.getElementById('inpUser').value = '';
+    document.getElementById('inpPass').value = '';
+    document.getElementById('inpConfirm').value = '';
+  }
+  function togglePass() {
+    const i = document.getElementById('inpPass');
+    i.type = i.type === 'password' ? 'text' : 'password';
+  }
+  function showAlert(msg, type='err') {
+    document.getElementById('alertBox').innerHTML = `<div class="alert ${type}"><span>${type==='err'?'⚠️':'✅'}</span>${msg}</div>`;
+  }
+  function setLoading(on) {
+    document.getElementById('submitBtn').disabled = on;
+    document.getElementById('btnText').innerHTML = on ? '<div class="spinner"></div>' : (mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản');
+  }
+  ['inpUser','inpPass','inpConfirm'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); });
+  });
+  async function handleSubmit() {
+    const username = document.getElementById('inpUser').value.trim();
+    const password = document.getElementById('inpPass').value;
+    if (!username || !password) { showAlert('Vui lòng nhập đầy đủ thông tin'); return; }
+    if (mode === 'register' && password !== document.getElementById('inpConfirm').value) { showAlert('Mật khẩu xác nhận không khớp'); return; }
+    setLoading(true);
+    document.getElementById('alertBox').innerHTML = '';
+    try {
+      const r = await fetch(mode === 'login' ? '/api/auth/login' : '/api/auth/register', {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password })
+      });
+      const d = await r.json();
+      if (d.success) {
+        localStorage.setItem('sl_token', d.token);
+        localStorage.setItem('sl_name', d.displayName);
+        showAlert(mode === 'login' ? 'Đăng nhập thành công! Đang chuyển trang...' : 'Tạo tài khoản thành công!', 'ok');
+        setTimeout(() => { window.location.href = '/checkso.html'; }, 800);
+      } else { showAlert(d.error || 'Đã xảy ra lỗi'); }
+    } catch { showAlert('Lỗi kết nối, vui lòng thử lại'); }
+    finally { setLoading(false); }
+  }
+</script>
+</body>
+</html>

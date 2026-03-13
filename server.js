@@ -17,7 +17,7 @@ const CONFIG = {
   USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
   PORT: process.env.PORT || 3000,
   BANK_ID: 'MSB',
-  ACCOUNT_NO: '80001375838',
+  ACCOUNT_NO: '6817072002',
   ACCOUNT_NAME: 'Nguyen Dang Hai',
   LOOKUP_PRICE: 20000,
   DB_FILE: process.env.DB_FILE || path.join(__dirname, 'db.json'),
@@ -243,11 +243,12 @@ app.post('/api/check', requireAuth, async (req, res) => {
 
   const db = loadDB();
   const user = db.users[req.uid];
-  if (user.balance < CONFIG.LOOKUP_PRICE) {
+  const price = user.customPrice || CONFIG.LOOKUP_PRICE;
+  if (user.balance < price) {
     return res.status(402).json({
       success: false, needDeposit: true,
-      error: `Số dư không đủ! Cần thêm ${(CONFIG.LOOKUP_PRICE - user.balance).toLocaleString('vi')}đ`,
-      balance: user.balance, required: CONFIG.LOOKUP_PRICE,
+      error: `Số dư không đủ! Cần thêm ${(price - user.balance).toLocaleString('vi')}đ`,
+      balance: user.balance, required: price,
     });
   }
   try {
@@ -268,10 +269,10 @@ app.post('/api/check', requireAuth, async (req, res) => {
     if (!phone || phone === '0' || phone === 'false' || phone === '') {
       return res.json({ success: false, error: 'Không tìm thấy thông tin. Tiền không bị trừ.' });
     }
-    user.balance -= CONFIG.LOOKUP_PRICE;
-    addHistory(user, { type: 'lookup', amount: -CONFIG.LOOKUP_PRICE, note: `Tra cứu: ${shopeeUsername.trim()} → ${phone}`, time: new Date().toISOString() });
+    user.balance -= price;
+    addHistory(user, { type: 'lookup', amount: -price, note: `Tra cứu: ${shopeeUsername.trim()} → ${phone}`, time: new Date().toISOString() });
     saveDB(db);
-    res.json({ success: true, phone, shopeeUsername: shopeeUsername.trim(), balance: user.balance });
+    res.json({ success: true, phone, shopeeUsername: shopeeUsername.trim(), balance: user.balance, price });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ success: false, error: 'Lỗi kết nối máy chủ tra cứu' });
@@ -313,6 +314,7 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
     totalDeposit: u.history.filter(h => h.type === 'deposit').reduce((s, h) => s + h.amount, 0),
     totalLookup: u.history.filter(h => h.type === 'lookup').length,
     lastActivity: u.history[0]?.time || u.createdAt,
+    customPrice: u.customPrice || null,
   }));
   users.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
   res.json({ success: true, users });
@@ -354,20 +356,20 @@ app.post('/api/admin/balance/set', requireAdmin, (req, res) => {
   res.json({ success: true, prevBalance: prev, newBalance: balance, username: user.username });
 });
 
-app.delete('/api/admin/users/:uid', requireAdmin, (req, res) => {
+app.post('/api/admin/price', requireAdmin, (req, res) => {
+  const { uid, price } = req.body;
+  if (!uid || price === undefined || price < 0)
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin' });
   const db = loadDB();
-  const user = db.users[req.params.uid];
+  const user = db.users[uid];
   if (!user) return res.status(404).json({ success: false, error: 'Không tìm thấy user' });
-  const username = user.username;
-  delete db.users[req.params.uid];
+  if (price === 0 || price === null) {
+    delete user.customPrice;
+  } else {
+    user.customPrice = price;
+  }
   saveDB(db);
-  res.json({ success: true, username });
+  res.json({ success: true, username: user.username, customPrice: user.customPrice || null });
 });
 
-// ─── SERVE FRONTEND ───────────────────────────────────────────────────────────
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-app.listen(CONFIG.PORT, () => {
-  console.log(`🚀 Server: http://localhost:${CONFIG.PORT}`);
-  console.log(`📋 MAX_HISTORY: ${CONFIG.MAX_HISTORY} bản ghi/user`);
-});
+app.delete('/api/admin/users/:uid', requireAdmin, (req, res) 

@@ -17,7 +17,7 @@ const CONFIG = {
   USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
   PORT: process.env.PORT || 3000,
   BANK_ID: 'MSB',
-  ACCOUNT_NO: '6817072002',
+  ACCOUNT_NO: '80001375838',
   ACCOUNT_NAME: 'Nguyen Dang Hai',
   LOOKUP_PRICE: 20000,
   DB_FILE: process.env.DB_FILE || path.join(__dirname, 'db.json'),

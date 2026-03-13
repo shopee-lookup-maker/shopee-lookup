@@ -202,7 +202,7 @@
   <div class="table-wrap">
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Thành viên</th><th>Số dư</th><th>Tổng nạp</th><th>Tra cứu</th><th>Hoạt động</th><th>Thao tác</th></tr></thead>
+        <thead><tr><th>Thành viên</th><th>Số dư</th><th>Tổng nạp</th><th>Tra cứu</th><th>Giá/lần</th><th>Hoạt động</th><th>Thao tác</th></tr></thead>
         <tbody id="userTbody"><tr class="empty-row"><td colspan="6">Đang tải...</td></tr></tbody>
       </table>
     </div>
@@ -355,12 +355,12 @@
         <td><span class="bal-cell">${fmt(u.balance)} ₫</span></td>
         <td><span class="num-cell">${fmt(u.totalDeposit)} ₫</span></td>
         <td><span class="num-cell">${u.totalLookup} lần</span></td>
-        <td><span class="date-cell">${fmtDate(u.lastActivity)}</span></td>
+        <td><span class="num-cell" style="color:${u.customPrice ? '#FFD54F' : 'var(--muted2)'}">${u.customPrice ? u.customPrice.toLocaleString('vi')+'đ' : '20.000đ'}</span></td><td><span class="date-cell">${fmtDate(u.lastActivity)}</span></td>
         <td onclick="event.stopPropagation()">
           <div class="actions">
             <button class="act-btn add" onclick="openBalModal('${u.uid}','add')">➕ Cộng</button>
             <button class="act-btn deduct" onclick="openBalModal('${u.uid}','deduct')">➖ Trừ</button>
-            <button class="act-btn detail" onclick="openDetail('${u.uid}')">📋</button>
+            <button class="act-btn detail" onclick="openDetail('${u.uid}')">📋</button><button class="act-btn" style="background:rgba(255,193,7,.1);border-color:rgba(255,193,7,.25);color:#FFD54F" onclick="openPriceModal('${u.uid}','${u.displayName}',${u.customPrice||0})">💰 Giá</button>
             <button class="act-btn del" onclick="confirmDelete('${u.uid}')">🗑</button>
           </div>
         </td>
@@ -473,7 +473,60 @@
     document.getElementById('toastContainer').appendChild(el);
     setTimeout(() => { el.style.animation='slideOut .3s ease forwards'; setTimeout(()=>el.remove(),300); }, 3000);
   }
+
+  let currentPriceUid = null;
+  function openPriceModal(uid, name, currentPrice) {
+    currentPriceUid = uid;
+    document.getElementById('priceModalSub').textContent = name + ' · Giá hiện tại: ' + (currentPrice ? currentPrice.toLocaleString('vi') + 'đ' : '20.000đ (mặc định)');
+    document.getElementById('priceInp').value = currentPrice || 20000;
+    document.getElementById('priceAlert').innerHTML = '';
+    openModal('priceModal');
+  }
+  async function submitPrice() {
+    const price = parseInt(document.getElementById('priceInp').value) || 20000;
+    try {
+      const r = await fetch('/api/admin/price', { method:'POST', headers:aH(), body:JSON.stringify({ uid:currentPriceUid, price: price === 20000 ? 0 : price }) });
+      const d = await r.json();
+      if (d.success) {
+        closeModal('priceModal');
+        toast('✅ Đã đặt giá ' + (d.customPrice ? d.customPrice.toLocaleString('vi') + 'đ' : '20.000đ (mặc định)') + ' cho ' + d.username, 'ok');
+        loadAll();
+      } else {
+        document.getElementById('priceAlert').innerHTML = '<div class="alert-box err">⚠️ ' + d.error + '</div>';
+      }
+    } catch { document.getElementById('priceAlert').innerHTML = '<div class="alert-box err">⚠️ Lỗi kết nối</div>'; }
+  }
+
   setInterval(loadAll, 30000);
 </script>
+
+<!-- MODAL: GIÁ RIÊNG -->
+<div class="overlay" id="priceModal">
+  <div class="modal">
+    <div class="m-top">
+      <div><h3>💰 Đặt giá tra cứu riêng</h3><p id="priceModalSub">—</p></div>
+      <button class="m-close" onclick="closeModal('priceModal')">×</button>
+    </div>
+    <div class="m-body">
+      <div id="priceAlert"></div>
+      <div class="fgroup">
+        <label class="flabel">Giá tra cứu (₫)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="q-amt" onclick="document.getElementById('priceInp').value=20000">20.000đ (mặc định)</div>
+          <div class="q-amt" onclick="document.getElementById('priceInp').value=18000">18.000đ</div>
+          <div class="q-amt" onclick="document.getElementById('priceInp').value=16000">16.000đ</div>
+          <div class="q-amt" onclick="document.getElementById('priceInp').value=14000">14.000đ</div>
+        </div>
+        <input type="number" class="finp mono" id="priceInp" placeholder="Nhập giá..." min="1000" step="1000"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Nhập 20000 hoặc để trống = dùng giá mặc định</div>
+      </div>
+      <div class="m-actions">
+        <button class="mbtn ghost" onclick="closeModal('priceModal')">Huỷ</button>
+        <button class="mbtn success" onclick="submitPrice()">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

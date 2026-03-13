@@ -220,9 +220,12 @@ app.get('/api/history/export', requireAuth, (req, res) => {
 app.post('/webhook/sepay', (req, res) => {
   const transferAmount = req.body.transferAmount;
   const description = req.body.description;
+  const content = req.body.content;
   const transferType = req.body.transferType;
   if (transferType !== 'in') return res.json({ success: false });
-  const match = description && description.match(/NAP\s+(uid_[a-f0-9]+)/i);
+  // Tìm uid trong cả description lẫn content (SePay có thể gửi ở 1 trong 2)
+  const searchText = (description || '') + ' ' + (content || '');
+  const match = searchText.match(/NAP\s+(uid_[a-f0-9]+)/i);
   if (!match) return res.json({ success: false });
   const uid = match[1];
   const amount = parseInt(transferAmount) || 0;

@@ -363,12 +363,30 @@
         if (d.balance > prev) {
           balance = d.balance;
           document.getElementById('balAmount').textContent = balance.toLocaleString('vi');
-          setPayStat('done','✅ Thanh toán thành công! Số dư đã cập nhật.');
+          setPayStat('done','✅ Nạp tiền thành công! Đang chuyển trang...');
           stopPoll(); loadWallet();
+          // Đóng modal và hiện toast thành công
+          setTimeout(() => {
+            closeDeposit();
+            showToast('💰 Nạp tiền thành công! Số dư: ' + balance.toLocaleString('vi') + ' ₫');
+            // Cuộn lên ô tra cứu
+            document.querySelector('.panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('shopeeInput').focus();
+          }, 800);
         }
       } catch {}
     }, 4000);
   }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a3a1a,#0d2b0d);border:1px solid rgba(76,175,80,.4);color:#81C784;padding:14px 24px;border-radius:14px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transition:all .4s ease;white-space:nowrap';
+    document.body.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)'; });
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; setTimeout(() => t.remove(), 400); }, 4000);
+  }
+
   function stopPoll() { if (pollInt) { clearInterval(pollInt); pollInt = null; } }
   function exportHistory(format) {
     const a = document.createElement('a');

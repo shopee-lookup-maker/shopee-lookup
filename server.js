@@ -296,6 +296,9 @@ app.post('/api/check', requireAuth, async (req, res) => {
     );
     const html = step2.data;
     console.log('[HAWK] Step2 HTML length:', html.length);
+    // Log 2000 ký tự giữa HTML để xem cấu trúc bảng
+    const midIdx = Math.floor(html.length / 2);
+    console.log('[HAWK] HTML sample:', html.substring(midIdx, midIdx + 800).replace(/\s+/g, ' '));
 
     // Parse HTML tìm số điện thoại theo username
     let phone = null;

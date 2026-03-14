@@ -264,34 +264,79 @@ app.post('/api/check', requireAuth, async (req, res) => {
   }
 
   try {
-    const response = await axios.post(
+    // Bước 1: Gửi yêu cầu tra cứu
+    const step1 = await axios.post(
       CONFIG.HAWK_BASE_URL + '/ajaxs/client/rut-tien-ref.php',
       new URLSearchParams({ token: CONFIG.HAWK_TOKEN, username: shopeeUsername.trim() }),
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': CONFIG.USER_AGENT } }
     );
-    const data = response.data;
-    console.log('[HAWK] username:', shopeeUsername.trim(), '| response:', JSON.stringify(data).substring(0, 200));
-    let phone = null;
-    if (typeof data === 'string') {
-      const c = data.trim();
-      if (/^0\d{9}$/.test(c) || /^\d{9,11}$/.test(c)) {
-        phone = c;
-      } else {
-        try { const p = JSON.parse(c); phone = p.phone || p.sdt || p.result; } catch(e) {}
-        if (!phone) phone = c;
-      }
-    } else if (data && typeof data === 'object') {
-      phone = data.phone || data.sdt || data.phone_number || data.result;
-    }
-    if (!phone || phone === '0' || phone === 'false' || phone === '') {
+    console.log('[HAWK] Step1:', JSON.stringify(step1.data).substring(0, 200));
+
+    // Kiểm tra bước 1 có thành công không
+    const s1 = step1.data;
+    const s1ok = (typeof s1 === 'object' && s1.status === 'success') ||
+                 (typeof s1 === 'string' && s1.includes('thành công'));
+    if (!s1ok) {
+      console.log('[HAWK] Step1 failed:', JSON.stringify(s1));
       return res.json({ success: false, error: 'Không tìm thấy thông tin. Tiền không bị trừ.' });
     }
+
+    // Bước 2: Chờ 2 giây rồi lấy kết quả từ lịch sử
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const step2 = await axios.get(
+      CONFIG.HAWK_BASE_URL + '/client/affiliates',
+      {
+        headers: { 'User-Agent': CONFIG.USER_AGENT },
+        withCredentials: true,
+        headers: {
+          'User-Agent': CONFIG.USER_AGENT,
+          'Cookie': 'user_login=' + CONFIG.HAWK_TOKEN + '; user_agent=' + encodeURIComponent(CONFIG.USER_AGENT)
+        }
+      }
+    );
+    const html = step2.data;
+    console.log('[HAWK] Step2 HTML length:', html.length);
+
+    // Parse HTML tìm số điện thoại theo username
+    let phone = null;
+    const targetUser = shopeeUsername.trim().toLowerCase();
+    // Tìm pattern: <td>username</td> ... <td>phone</td>
+    const rowRegex = /<tr[^>]*>[\s\S]*?<\/tr>/gi;
+    const rows = html.match(rowRegex) || [];
+    for (const row of rows) {
+      const tdMatches = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+      const tds = tdMatches.map(td => td.replace(/<[^>]+>/g, '').trim());
+      if (tds.length >= 3 && tds[0].toLowerCase() === targetUser) {
+        const possiblePhone = tds[tds.length - 1];
+        if (/^0\d{8,10}$/.test(possiblePhone) || /^\d{9,11}$/.test(possiblePhone)) {
+          phone = possiblePhone;
+          break;
+        }
+      }
+    }
+
+    // Fallback: tìm số điện thoại gần username trong toàn bộ HTML
+    if (!phone) {
+      const userIdx = html.toLowerCase().indexOf(targetUser);
+      if (userIdx !== -1) {
+        const nearby = html.substring(userIdx, userIdx + 500);
+        const phoneMatch = nearby.match(/0\d{9}/);
+        if (phoneMatch) phone = phoneMatch[0];
+      }
+    }
+
+    console.log('[HAWK] phone found:', phone);
+
+    if (!phone) {
+      return res.json({ success: false, error: 'Không tìm thấy số điện thoại. Tiền không bị trừ.' });
+    }
+
     user.balance -= price;
     addHistory(user, { type: 'lookup', amount: -price, note: 'Tra cứu: ' + shopeeUsername.trim() + ' → ' + phone, time: new Date().toISOString() });
     saveDB(db);
     res.json({ success: true, phone: phone, shopeeUsername: shopeeUsername.trim(), balance: user.balance, price: price });
   } catch (err) {
-    console.error(err.message);
+    console.error('[HAWK] Error:', err.message);
     res.status(500).json({ success: false, error: 'Lỗi kết nối máy chủ tra cứu' });
   }
 });

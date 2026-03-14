@@ -297,6 +297,7 @@ app.post('/api/check', requireAuth, async (req, res) => {
     const html = step2.data;
     console.log('[HAWK] Step2 HTML length:', html.length);
     // Tìm vị trí username trong HTML và log xung quanh
+    const targetUser = shopeeUsername.trim().toLowerCase();
     const userPos = html.toLowerCase().indexOf(targetUser.toLowerCase());
     console.log('[HAWK] username pos in HTML:', userPos);
     if (userPos !== -1) {
@@ -308,7 +309,6 @@ app.post('/api/check', requireAuth, async (req, res) => {
 
     // Parse HTML tìm số điện thoại theo username
     let phone = null;
-    const targetUser = shopeeUsername.trim().toLowerCase();
     // Tìm pattern: <td>username</td> ... <td>phone</td>
     const rowRegex = /<tr[^>]*>[\s\S]*?<\/tr>/gi;
     const rows = html.match(rowRegex) || [];

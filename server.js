@@ -296,9 +296,15 @@ app.post('/api/check', requireAuth, async (req, res) => {
     );
     const html = step2.data;
     console.log('[HAWK] Step2 HTML length:', html.length);
-    // Log 2000 ký tự giữa HTML để xem cấu trúc bảng
-    const midIdx = Math.floor(html.length / 2);
-    console.log('[HAWK] HTML sample:', html.substring(midIdx, midIdx + 800).replace(/\s+/g, ' '));
+    // Tìm vị trí username trong HTML và log xung quanh
+    const userPos = html.toLowerCase().indexOf(targetUser.toLowerCase());
+    console.log('[HAWK] username pos in HTML:', userPos);
+    if (userPos !== -1) {
+      console.log('[HAWK] HTML near username:', html.substring(Math.max(0, userPos - 100), userPos + 400).replace(/\s+/g, ' '));
+    } else {
+      // Log phần cuối HTML (thường chứa bảng dữ liệu)
+      console.log('[HAWK] HTML tail:', html.substring(html.length - 2000, html.length).replace(/\s+/g, ' '));
+    }
 
     // Parse HTML tìm số điện thoại theo username
     let phone = null;

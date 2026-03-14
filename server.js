@@ -286,12 +286,14 @@ app.post('/api/check', requireAuth, async (req, res) => {
     const step2 = await axios.get(
       CONFIG.HAWK_BASE_URL + '/client/affiliates',
       {
-        headers: { 'User-Agent': CONFIG.USER_AGENT },
-        withCredentials: true,
         headers: {
           'User-Agent': CONFIG.USER_AGENT,
-          'Cookie': 'user_login=' + CONFIG.HAWK_TOKEN + '; user_agent=' + encodeURIComponent(CONFIG.USER_AGENT)
-        }
+          'Cookie': 'user_login=' + CONFIG.HAWK_TOKEN,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+          'Referer': 'https://hawksocia.com/client/home',
+        },
+        maxRedirects: 5,
       }
     );
     const html = step2.data;

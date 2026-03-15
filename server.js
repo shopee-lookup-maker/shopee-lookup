@@ -24,6 +24,7 @@ const CONFIG = {
   SESSION_TTL: 7 * 24 * 60 * 60 * 1000,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin123',
   MAX_HISTORY: 50,
+  PROXY_URL: process.env.PROXY_URL || 'https://hawk-proxy.onrender.com',
 };
 
 // ─── DATABASE ─────────────────────────────────────────────────────────────────

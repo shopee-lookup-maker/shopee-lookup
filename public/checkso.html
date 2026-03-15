@@ -127,7 +127,15 @@
     .btn2:hover:not(:disabled){background:var(--org2);transform:translateY(-1px)}
     .btn2:disabled{opacity:.5;cursor:not-allowed}
     @media(max-width:680px){.grid2{grid-template-columns:1fr}.bal-strip{flex-direction:column;align-items:flex-start;gap:16px}.bal-right{width:100%}.bal-btn{flex:1;justify-content:center}}
-  </style>
+  
+  .lookup-row td { padding: 10px 14px; border-bottom: 1px solid var(--bdr); vertical-align: middle; }
+  .lookup-row:last-child td { border-bottom: none; }
+  .lookup-row:hover td { background: var(--s3); }
+  .status-ok { color: #81C784; font-weight: 700; }
+  .status-fail { color: #EF9A9A; font-weight: 700; }
+  .phone-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--org2); font-size: 14px; background: var(--org-dim); padding: 4px 10px; border-radius: 7px; border: 1px solid var(--org-glow); }
+
+</style>
 </head>
 <body>
 <div class="bg-grid"></div>
@@ -174,11 +182,26 @@
       </div>
     </div>
     <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon blue">📋</div>
-        <div><div class="panel-title">Giao dịch gần đây</div><div class="panel-sub">Nạp tiền & tra cứu</div></div>
+      <div class="panel-head" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="panel-icon blue">📋</div>
+          <div><div class="panel-title">Lịch sử tra cứu</div><div class="panel-sub">Kết quả gần nhất</div></div>
+        </div>
       </div>
-      <div class="panel-body" id="histPanel"><div class="empty">Chưa có giao dịch nào</div></div>
+      <div style="overflow-x:auto">
+        <table id="lookupTable" style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--s3);border-bottom:1px solid var(--bdr2)">
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Username</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Trạng thái</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Số điện thoại</th>
+            </tr>
+          </thead>
+          <tbody id="lookupTbody">
+            <tr><td colspan="3" style="padding:24px;text-align:center;color:var(--muted)">Chưa có lịch sử tra cứu</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -205,7 +228,7 @@
           <div class="qr-img-box"><img id="qrImg" src="" alt="QR"/></div>
           <div class="bank-rows">
             <div class="brow"><span class="bl">Ngân hàng</span><span class="bv">MSB</span></div>
-            <div class="brow"><span class="bl">Số tài khoản</span><span class="bv">96886693006960</span></div>
+            <div class="brow"><span class="bl">Số tài khoản</span><span class="bv">6817072002</span></div>
             <div class="brow"><span class="bl">Chủ TK</span><span class="bv">NGUYEN DANG HAI</span></div>
             <div class="brow"><span class="bl">Số tiền</span><span class="bv" id="qrAmt">—</span></div>
           </div>
@@ -280,6 +303,23 @@
       }
     } catch {}
   }
+
+  function addLookupRow(username, success, phone) {
+    const tbody = document.getElementById('lookupTbody');
+    // Xóa dòng "chưa có lịch sử" nếu còn
+    if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+    const tr = document.createElement('tr');
+    tr.className = 'lookup-row';
+    tr.innerHTML = `
+      <td style="font-weight:600;color:var(--txt)">${escH(username)}</td>
+      <td>${success ? '<span class="status-ok">✅ Thành công</span>' : '<span class="status-fail">❌ Thất bại</span>'}</td>
+      <td>${success ? `<span class="phone-val">${escH(phone)}</span>` : '<span style="color:var(--muted);font-size:12px">Không tìm thấy</span>'}</td>
+    `;
+    tbody.insertBefore(tr, tbody.firstChild);
+    // Giữ tối đa 20 dòng
+    while (tbody.rows.length > 20) tbody.deleteRow(tbody.rows.length - 1);
+  }
+
   function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function histRow(h) {
     const isDep = h.type === 'deposit' || h.type === 'admin_add';
@@ -308,10 +348,12 @@
         balance = d.balance ?? balance;
         document.getElementById('balAmount').textContent = balance.toLocaleString('vi');
         loadWallet();
+        addLookupRow(d.shopeeUsername, true, d.phone);
         document.getElementById('checkResult').innerHTML = `<div class="result ok"><div class="res-head">✅ Tra cứu thành công</div><div class="res-body"><div class="res-row"><span class="rlabel">Username</span><span class="rval">${escH(d.shopeeUsername)}</span></div><div class="res-row"><span class="rlabel">Số điện thoại</span><span class="rval phone">${escH(d.phone)}</span></div><div class="res-row"><span class="rlabel">Số dư còn lại</span><span class="rval green">${(d.balance??balance).toLocaleString('vi')} ₫</span></div></div></div>`;
       } else if (d.needDeposit) {
         document.getElementById('checkResult').innerHTML = `<div class="result warn"><div class="res-head">⚠️ Số dư không đủ</div><div class="res-body"><div class="res-row"><span class="rlabel">Số dư hiện tại</span><span class="rval">${(d.balance??0).toLocaleString('vi')} ₫</span></div><div class="res-row"><span class="rlabel">Phí tra cứu</span><span class="rval">20.000 ₫</span></div><div style="margin-top:12px"><button class="btn" onclick="openDeposit()">➕ Nạp Tiền Ngay</button></div></div></div>`;
       } else {
+        addLookupRow(shopeeUsername, false, '');
         document.getElementById('checkResult').innerHTML = `<div class="result fail"><div class="res-head">❌ ${escH(d.error||'Không tìm thấy thông tin')}</div></div>`;
       }
     } catch { document.getElementById('checkResult').innerHTML = `<div class="result fail"><div class="res-head">❌ Lỗi kết nối, thử lại</div></div>`; }
